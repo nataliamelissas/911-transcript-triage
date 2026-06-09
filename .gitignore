@@ -1,0 +1,29 @@
+# Python virtual environment
+Lib/
+Include/
+Scripts/
+share/
+pyvenv.cfg
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+.env
+
+# Project artifacts
+mlruns/
+mlflow.db
+data/raw/
+data/*.wav
+*.ckpt
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+pytest-cache-*/
+
+# AI
+.claude
+
+# personal
+study_plan.md

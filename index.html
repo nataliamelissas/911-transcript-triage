@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>triage-stream · 7-Day Study Plan</title>
+<style>
+  :root{
+    --bg:#f7f7f5; --surface:#ffffff; --surface-2:#fbfbfa;
+    --text:#1b1b1d; --muted:#6b6b73; --faint:#9a9aa2;
+    --border:#e7e7e3; --border-strong:#d9d9d4;
+    --accent:#5b5bd6; --accent-soft:#eceaff;
+    --star:#c2410c; --star-soft:#fff2ea;
+    --ok:#0f9d6b; --ok-soft:#e6f6ef;
+    --track:#ececea;
+    --shadow:0 1px 2px rgba(20,20,30,.04),0 8px 24px rgba(20,20,30,.05);
+    --radius:14px;
+    --maxw:880px;
+  }
+  html[data-theme="dark"]{
+    --bg:#0e0f13; --surface:#16171d; --surface-2:#1b1c23;
+    --text:#e9e9ee; --muted:#9b9ba6; --faint:#6c6c78;
+    --border:#26272f; --border-strong:#33343d;
+    --accent:#8b8bf0; --accent-soft:#22233a;
+    --star:#f59e6b; --star-soft:#2a1d14;
+    --ok:#3fd39a; --ok-soft:#13261f;
+    --track:#26272f;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased; letter-spacing:.1px;
+  }
+  a{color:var(--accent); text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{
+    font-family:"SF Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:.85em; background:var(--surface-2); border:1px solid var(--border);
+    padding:.06em .4em; border-radius:6px; color:var(--text); white-space:nowrap;
+  }
+
+  /* ---------- sticky header ---------- */
+  header{
+    position:sticky; top:0; z-index:20;
+    background:color-mix(in srgb,var(--bg) 86%, transparent);
+    backdrop-filter:saturate(140%) blur(10px);
+    border-bottom:1px solid var(--border);
+  }
+  .bar{
+    max-width:var(--maxw); margin:0 auto; padding:12px 20px;
+    display:flex; align-items:center; gap:14px;
+  }
+  .brand{display:flex; flex-direction:column; line-height:1.2; min-width:0}
+  .brand .name{font-weight:650; letter-spacing:-.2px}
+  .brand .name b{color:var(--accent)}
+  .brand .sub{font-size:11.5px; color:var(--faint)}
+  .progwrap{flex:1; display:flex; align-items:center; gap:10px; min-width:0}
+  .track{flex:1; height:8px; background:var(--track); border-radius:99px; overflow:hidden}
+  .fill{height:100%; width:0%; border-radius:99px;
+    background:linear-gradient(90deg,var(--accent),#7a78ea); transition:width .5s cubic-bezier(.2,.7,.2,1)}
+  .pct{font-variant-numeric:tabular-nums; font-weight:650; font-size:13px; min-width:42px; text-align:right}
+  .iconbtn{
+    border:1px solid var(--border); background:var(--surface); color:var(--muted);
+    width:34px; height:34px; border-radius:9px; cursor:pointer; font-size:15px;
+    display:grid; place-items:center; transition:.15s;
+  }
+  .iconbtn:hover{color:var(--text); border-color:var(--border-strong)}
+
+  /* ---------- layout ---------- */
+  main{max-width:var(--maxw); margin:0 auto; padding:0 20px 100px}
+  .hero{padding:46px 0 26px}
+  .hero h1{font-size:30px; letter-spacing:-.6px; margin:0 0 8px; font-weight:700}
+  .hero h1 b{color:var(--accent)}
+  .hero p.lede{font-size:16px; color:var(--muted); margin:0 0 20px; max-width:62ch}
+  .facts{display:flex; flex-wrap:wrap; gap:10px}
+  .fact{
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:10px 14px; box-shadow:var(--shadow);
+  }
+  .fact .k{font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:var(--faint)}
+  .fact .v{font-weight:600; font-size:13.5px; margin-top:2px}
+
+  .note{
+    margin-top:18px; background:var(--surface-2); border:1px solid var(--border);
+    border-left:3px solid var(--accent); border-radius:10px; padding:12px 16px;
+    color:var(--muted); font-size:13.5px;
+  }
+  .legend{display:flex; gap:18px; flex-wrap:wrap; align-items:center; margin-top:18px; font-size:12.5px; color:var(--muted)}
+  .legend .star{color:var(--star); font-weight:600}
+
+  /* ---------- section titles ---------- */
+  .secttl{display:flex; align-items:baseline; gap:10px; margin:44px 0 14px}
+  .secttl h2{font-size:13px; text-transform:uppercase; letter-spacing:1.4px; color:var(--faint); margin:0; font-weight:650}
+  .secttl .line{flex:1; height:1px; background:var(--border)}
+
+  /* ---------- day card / accordion ---------- */
+  .day{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    box-shadow:var(--shadow); margin-bottom:14px; overflow:hidden;
+    transition:border-color .2s;
+  }
+  .day[open]{border-color:var(--border-strong)}
+  .day.done{border-color:var(--ok)}
+  summary{
+    list-style:none; cursor:pointer; padding:16px 18px;
+    display:flex; align-items:center; gap:14px; user-select:none;
+  }
+  summary::-webkit-details-marker{display:none}
+  .daynum{
+    flex:none; width:38px; height:38px; border-radius:10px; display:grid; place-items:center;
+    background:var(--accent-soft); color:var(--accent); font-weight:700; font-size:15px;
+    font-variant-numeric:tabular-nums;
+  }
+  .day.done .daynum{background:var(--ok-soft); color:var(--ok)}
+  .daymeta{flex:1; min-width:0}
+  .daymeta .t{font-weight:650; letter-spacing:-.2px; font-size:15.5px}
+  .daymeta .d{font-size:12.5px; color:var(--muted); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .dayprog{flex:none; display:flex; align-items:center; gap:9px}
+  .ring{--p:0; width:30px; height:30px; border-radius:50%;
+    background:conic-gradient(var(--accent) calc(var(--p)*1%), var(--track) 0);
+    display:grid; place-items:center; transition:.4s}
+  .day.done .ring{background:conic-gradient(var(--ok) 100%, var(--ok) 0)}
+  .ring::after{content:""; width:22px; height:22px; border-radius:50%; background:var(--surface)}
+  .ring b{position:absolute; font-size:9px; font-weight:700; color:var(--muted); font-variant-numeric:tabular-nums}
+  .ring{position:relative}
+  .chev{color:var(--faint); transition:transform .25s; font-size:13px}
+  .day[open] .chev{transform:rotate(90deg)}
+
+  .body{padding:2px 18px 20px; border-top:1px solid var(--border)}
+  .day[open] .body{animation:fade .35s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(-4px)}to{opacity:1}}
+
+  .block{margin-top:18px}
+  .block > h4{
+    font-size:11.5px; text-transform:uppercase; letter-spacing:.9px; color:var(--faint);
+    margin:0 0 10px; font-weight:650; display:flex; align-items:center; gap:8px;
+  }
+
+  /* ---------- checklist ---------- */
+  ul.checks{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px}
+  ul.checks.ordered{counter-reset:step}
+  .check{display:flex; gap:11px; align-items:flex-start; padding:7px 8px; border-radius:9px; transition:background .15s}
+  .check:hover{background:var(--surface-2)}
+  .check input{
+    appearance:none; -webkit-appearance:none; flex:none; margin-top:2px;
+    width:18px; height:18px; border:1.6px solid var(--border-strong); border-radius:6px;
+    background:var(--surface); cursor:pointer; transition:.15s; position:relative;
+  }
+  .check input:hover{border-color:var(--accent)}
+  .check input:checked{background:var(--accent); border-color:var(--accent)}
+  .check input:checked::after{
+    content:""; position:absolute; left:5px; top:1.5px; width:5px; height:9px;
+    border:solid #fff; border-width:0 2px 2px 0; transform:rotate(42deg);
+  }
+  .check label{cursor:pointer; flex:1; transition:.2s}
+  .check input:checked + label{color:var(--faint); text-decoration:line-through; text-decoration-color:var(--border-strong)}
+  ul.ordered .check label::before{
+    counter-increment:step; content:counter(step); font-variant-numeric:tabular-nums;
+    color:var(--accent); font-weight:650; font-size:12px; margin-right:8px;
+  }
+  ul.ordered .check input:checked + label::before{color:var(--faint)}
+
+  /* ---------- star + tooltip ---------- */
+  .star-badge{
+    flex:none; color:var(--star); background:var(--star-soft); border-radius:6px;
+    font-size:11px; padding:1px 6px; font-weight:700; cursor:help; margin-left:4px;
+    border:1px solid color-mix(in srgb,var(--star) 25%, transparent);
+  }
+  .t{
+    border-bottom:1.5px dotted var(--faint); cursor:help; position:relative;
+  }
+  [data-tip]{position:relative}
+  [data-tip]:hover::after,[data-tip]:focus-visible::after{
+    content:attr(data-tip); position:absolute; left:0; bottom:calc(100% + 8px);
+    width:max-content; max-width:280px; z-index:30;
+    background:#23232b; color:#f4f4f7; font-size:12px; font-weight:400; line-height:1.45;
+    letter-spacing:.1px; padding:9px 12px; border-radius:9px; text-transform:none;
+    box-shadow:0 8px 28px rgba(0,0,0,.28); white-space:normal; pointer-events:none;
+  }
+  [data-tip]:hover::before,[data-tip]:focus-visible::before{
+    content:""; position:absolute; left:14px; bottom:calc(100% + 2px); z-index:31;
+    border:6px solid transparent; border-top-color:#23232b;
+  }
+  html[data-theme="dark"] [data-tip]:hover::after{background:#2f3040}
+  html[data-theme="dark"] [data-tip]:hover::before{border-top-color:#2f3040}
+
+  /* ---------- resources + payoff ---------- */
+  .res{display:flex; flex-direction:column; gap:3px}
+  .res a{display:flex; align-items:center; gap:8px; padding:7px 8px; border-radius:8px; font-size:13.5px; transition:background .15s}
+  .res a:hover{background:var(--surface-2); text-decoration:none}
+  .res a .ic{color:var(--faint); font-size:12px}
+  .res a .host{color:var(--faint); font-size:12px; margin-left:auto}
+  .res .repo{color:var(--muted)}
+  .res .repo code{margin-right:4px}
+
+  /* ---------- inline link icon ---------- */
+  .lnk{
+    display:inline-grid; place-items:center; vertical-align:text-bottom;
+    width:15px; height:15px; margin:0 1px 0 3px; border-radius:5px;
+    font-size:10px; line-height:1; color:var(--accent); font-weight:700;
+    background:var(--accent-soft); border:1px solid transparent;
+    text-decoration:none; transition:.15s; transform:translateY(-1px);
+  }
+  .lnk:hover{background:var(--accent); color:#fff; text-decoration:none}
+  .check input:checked + label .lnk{opacity:.55}
+
+  .payoff{
+    margin-top:18px; background:linear-gradient(180deg,var(--accent-soft),transparent);
+    border:1px solid var(--border); border-radius:11px; padding:13px 16px;
+  }
+  .payoff .lab{font-size:10.5px; text-transform:uppercase; letter-spacing:1px; color:var(--accent); font-weight:700}
+  .payoff .q{margin-top:5px; font-size:14px; font-style:italic; color:var(--text)}
+
+  /* ---------- generic collapsible (toolbox / scaling / jobmap) ---------- */
+  details.panel{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    box-shadow:var(--shadow); margin-bottom:14px; overflow:hidden;
+  }
+  details.panel > summary{padding:16px 18px}
+  details.panel > summary .t{font-weight:650; font-size:15px; border:none; cursor:pointer}
+  details.panel .body{padding:4px 18px 20px}
+  details.panel ul{margin:0; padding-left:0; list-style:none; display:flex; flex-direction:column; gap:9px}
+  details.panel ul li{padding-left:20px; position:relative; color:var(--muted); font-size:13.8px}
+  details.panel ul li::before{content:""; position:absolute; left:4px; top:9px; width:5px; height:5px; border-radius:50%; background:var(--accent)}
+  details.panel ul li b{color:var(--text); font-weight:600}
+
+  .pillrow{display:flex; flex-wrap:wrap; gap:7px; margin-top:4px}
+  .pill{background:var(--surface-2); border:1px solid var(--border); border-radius:99px; padding:4px 11px; font-size:12.5px; color:var(--muted)}
+
+  footer{max-width:var(--maxw); margin:0 auto; padding:30px 20px; color:var(--faint); font-size:12px; text-align:center}
+  .resetbtn{background:none; border:none; color:var(--faint); cursor:pointer; font-size:12px; text-decoration:underline; padding:0}
+  .resetbtn:hover{color:var(--star)}
+
+  @media (max-width:600px){
+    .hero h1{font-size:24px}
+    .daymeta .d{display:none}
+    .brand .sub{display:none}
+    .bar{gap:10px; padding:10px 16px}
+    main{padding:0 16px 80px}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="bar">
+    <div class="brand">
+      <span class="name"><b>triage</b>-stream</span>
+      <span class="sub">7-day study + build plan</span>
+    </div>
+    <div class="progwrap">
+      <div class="track"><div class="fill" id="globalFill"></div></div>
+      <span class="pct" id="globalPct">0%</span>
+    </div>
+    <button class="iconbtn" id="themeBtn" title="Toggle dark mode" aria-label="Toggle theme">◐</button>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <h1>Ship a real-time <b>911-transcript triage</b> system</h1>
+    <p class="lede">A production-shaped pipeline you can explain end-to-end in your next two technical interviews — and link on GitHub. Tick a box and it saves automatically.</p>
+
+    <div class="facts">
+      <div class="fact"><div class="k">Goal</div><div class="v">Explainable, demo-able pipeline</div></div>
+      <div class="fact"><div class="k">Budget</div><div class="v">1–2 hrs × 7 evenings (~7–14 hrs)</div></div>
+      <div class="fact"><div class="k">Stretch</div><div class="v">Day 7 — one real AWS slice</div></div>
+    </div>
+
+    <div class="note">
+      <b>Honest scope.</b> This budget builds a complete, tested, observable pipeline that runs locally and deploys one real AWS slice — <i>not</i> K8s + Airflow + Ray. That's more credible than a half-finished distributed system. The sequencing means if an evening runs short, you still have a working system.
+    </div>
+
+    <div class="legend">
+      <span><span class="star">⭐</span> = a gap your screener already exposed — prioritize these</span>
+      <span>·</span>
+      <span><span class="t" data-tip="Hover any underlined term for a plain-language definition.">dotted underline</span> = hover for a definition</span>
+    </div>
+  </section>
+
+  <div class="secttl"><h2>The 7 days</h2><div class="line"></div></div>
+  <div id="days"></div>
+
+  <div class="secttl"><h2>Context &amp; reference</h2><div class="line"></div></div>
+  <div id="panels"></div>
+
+  <footer>
+    Progress is stored only in this browser. ·
+    <button class="resetbtn" id="resetBtn">Reset all progress</button>
+  </footer>
+</main>
+
+<script>
+/* ============================================================
+   DATA — faithful to STUDY_PLAN.md; tooltips embedded inline.
+   ============================================================ */
+const T = (term, tip) => `<span class="t" data-tip="${tip.replace(/"/g,'&quot;')}">${term}</span>`;
+const L = (u, label) => `<a class="lnk" href="${u}" target="_blank" rel="noopener" data-tip="${label.replace(/"/g,'&quot;')}" aria-label="${label.replace(/"/g,'&quot;')}">↗</a>`;
+
+const DAYS = [
+  {
+    n:1, title:"Foundations, contracts &amp; the acceptance test",
+    desc:"Get the project running, understand the data contracts, and write the one test that defines &quot;done.&quot;",
+    full:"Get the project running, understand the data contracts, and write the one test that defines &quot;done&quot; for the whole system. No feature code yet — today is orientation and a clear target.",
+    objectives:[
+      {star:true, t:`Define ${T('unit vs integration vs e2e','Unit: one function in isolation, many, fast, dependencies mocked. Integration: real seams between components. E2E: the whole system, few, slow, little mocked.')} precisely (scope, speed, count, what's mocked).`},
+      {t:`Explain the ${T('test pyramid','Many cheap unit tests at the base, fewer integration, very few slow e2e at the top.')} vs the ${T('outside-in / acceptance-first','Write the failing e2e test that defines &quot;done&quot; first, then drive unit tests inward to make it pass.')} approach, and when each applies.`},
+      {t:`Explain why ${T('contracts (Pydantic models)','Typed data models every stage validates against — defined before logic so services stay decoupled and inputs are checked at boundaries.')} are defined before any service logic.`},
+    ],
+    steps:[
+      {t:`Create a Python 3.10+ virtualenv and run <code>make install</code>.`},
+      {t:`Run <code>make test-unit</code> — confirm the green baseline (the example schema tests pass).`},
+      {t:`Open <code>common/schemas.py</code> and read every model. On paper, draw the flow: <code>AudioChunk → TranscriptChunk → Classification → RouteDecision</code>.`},
+      {t:`Read the test-pyramid article${L('https://martinfowler.com/articles/practical-test-pyramid.html','Test pyramid — Martin Fowler')}; write 3 sentences distinguishing unit/integration/e2e in your own words.`},
+      {t:`In <code>tests/e2e/test_pipeline.py</code>, replace the <code>skip</code> with an ${T('xfail','&quot;Expected to fail&quot; — the test runs but a failure is recorded as expected, not an error. It documents the target before the code exists.')} test${L('https://docs.pytest.org/en/stable/how-to/index.html','pytest — how-to guides')} asserting a critical sample call routes to <code>dispatch_fast_path</code>. It won't pass yet — that's the point.`},
+      {t:`Commit: <code>test: add acceptance test for critical-call routing</code>.`},
+    ],
+    deliverables:[
+      {t:`<code>make install</code> succeeds and <code>make test-unit</code> is green.`},
+      {t:`You can verbally walk every model in <code>schemas.py</code>.`},
+      {t:`An xfail e2e test exists describing the critical-call path.`},
+      {t:`Day-1 commit pushed (CI runs).`},
+    ],
+    resources:[
+      {l:"Test pyramid (Martin Fowler)", u:"https://martinfowler.com/articles/practical-test-pyramid.html"},
+      {l:"pytest — how-to guides", u:"https://docs.pytest.org/en/stable/how-to/index.html"},
+    ],
+    repo:["common/schemas.py","tests/"],
+    payoff:"I start from an acceptance test that defines done, then drive units inward — and keep e2e few because they're slow and brittle.",
+  },
+  {
+    n:2, title:"Streaming ingest + ASR",
+    desc:"A simulator that replays audio as a live stream, and an ASR step that turns chunks into transcripts with measured latency.",
+    full:"Build the front of the pipeline: a simulator that replays audio as a live stream, and an ASR component that turns those chunks into transcripts with measured latency.",
+    objectives:[
+      {t:`Explain ${T('streaming STT','Speech-to-text on a live audio stream rather than a complete file.')}: chunking, ${T('partial vs final hypotheses','Partials are revisable best-guesses emitted mid-utterance; the final is committed once the chunk is complete.')}, rolling buffer.`},
+      {t:`Explain the latency/accuracy tradeoff and why ${T('chunk length','Shorter chunks → lower latency but less context, so lower accuracy. ~1s chunk ≈ 500–800ms latency.')} is the knob (~1s ≈ 500–800ms).`},
+      {t:`Explain why you simulate the stream instead of using real 911 audio (${T('PII / compartmentalization','Real 911 recordings are sensitive personal data that cannot live in a public repo; a simulator keeps the streaming semantics without the compliance risk.')}).`},
+    ],
+    steps:[
+      {t:`Get one sample <code>.wav</code> (synthesize with TTS, or grab a short public clip) and put it in <code>data/sample/</code>.`},
+      {t:`Skim the faster-whisper README quickstart${L('https://github.com/SYSTRAN/faster-whisper','faster-whisper')} so you know the API shape.`},
+      {t:`Implement <code>ingest/stream_simulator.py</code>: load the wav${L('https://python-soundfile.readthedocs.io/','python-soundfile — read/write audio')}, slice into <code>settings.chunk_seconds</code> windows, base64-encode each PCM window into an <code>AudioChunk</code>, and <code>yield</code> them with <code>asyncio.sleep</code> to mimic real time; flag the last as <code>is_final</code>.`},
+      {t:`Implement <code>asr/transcriber.py</code>: lazy-load <code>WhisperModel</code>, decode base64 → float32 numpy, keep a rolling buffer, call <code>transcribe</code>, return a <code>TranscriptChunk</code> with <code>asr_latency_ms</code> measured.`},
+      {t:`Write a small demo script that pipes the simulator into the transcriber and prints live partial text + per-chunk latency.`},
+      {t:`Note your ${T('P50 latency','Median — half of requests are faster than this. P99 is the slow tail.')}. Commit: <code>feat: streaming audio simulator + faster-whisper ASR</code>.`},
+    ],
+    deliverables:[
+      {t:`<code>stream_simulator.py</code> emits ordered <code>AudioChunk</code>s on a real-time cadence.`},
+      {t:`<code>transcriber.py</code> returns <code>TranscriptChunk</code>s with latency populated.`},
+      {t:`A demo prints live partials + latency to the console.`},
+      {t:`Day-2 commit pushed.`},
+    ],
+    resources:[
+      {l:"faster-whisper", u:"https://github.com/SYSTRAN/faster-whisper"},
+      {l:"python-soundfile (read/write audio)", u:"https://python-soundfile.readthedocs.io/"},
+    ],
+    repo:["ingest/stream_simulator.py","asr/transcriber.py","schemas.py"],
+    payoff:"Real numbers — P50 ASR latency was ~X ms at 1s chunks.",
+  },
+  {
+    n:3, title:"The model — train, track, register (MLOps core)",
+    desc:"Train the urgency classifier, track the experiment in MLflow, and register it only if it clears a recall bar.",
+    full:"Train the urgency classifier, track the experiment in MLflow, and register it only if it clears a recall bar. This is the heart of the MLOps story.",
+    objectives:[
+      {star:true, t:`Explain why ${T('critical-class recall','Of all truly critical calls, the fraction the model catches. A missed CRITICAL is catastrophic, so you optimize recall even at the cost of precision.')} is the gating metric, not accuracy (cost of a false negative).`},
+      {t:`Distinguish MLflow ${T('tracking','Logging experiment runs, params & metrics.')} vs ${T('registry','Versioned, promotable models you can stage to Production.')} vs ${T('serving','The runtime that loads a registry model and answers requests.')}.`},
+      {t:`Explain ${T('transfer learning / fine-tuning','Adapt a small pretrained transformer to your task instead of training from scratch — far less data and compute.')} a small transformer and ${T('stratified splits','Train/val/test splits that preserve the class ratio, so the rare critical class appears in every split.')}.`},
+    ],
+    steps:[
+      {t:`Get a public/synthetic emergency-transcript dataset and load it with HF <code>datasets</code>${L('https://huggingface.co/docs/datasets/loading','HF — datasets loading')}.`},
+      {t:`Map its labels to the <code>Urgency</code> enum; make a <b>stratified</b> train/val/test split (<code>sklearn.model_selection.train_test_split</code>).`},
+      {t:`Tokenize with <code>AutoTokenizer.from_pretrained("distilbert-base-uncased")</code>.`},
+      {t:`Fine-tune with <code>transformers.Trainer</code>${L('https://huggingface.co/docs/transformers/training','HF — fine-tuning')}; in <code>compute_metrics</code>, report <b>per-class</b> precision/recall/F1${L('https://scikit-learn.org/stable/modules/model_evaluation.html','scikit-learn — model evaluation')}.`},
+      {t:`Start MLflow (<code>make up</code>); set the tracking URI; <code>log_params/log_metrics</code>${L('https://mlflow.org/docs/latest/tracking.html','MLflow — tracking')} and <code>mlflow.transformers.log_model(..., registered_model_name="urgency-classifier")</code>${L('https://mlflow.org/docs/latest/model-registry.html','MLflow — model registry')}.`},
+      {t:`Add the gate: only register/promote if critical-class recall ≥ your threshold.`},
+      {t:`Open <code>localhost:5000</code>, confirm the run + registered model. Commit: <code>feat: train + MLflow tracking + recall-gated registry</code>.`},
+    ],
+    deliverables:[
+      {t:`Dataset placed (no real PII committed).`},
+      {t:`<code>train.py</code> fine-tunes and logs per-class metrics to MLflow.`},
+      {t:`Model registers only when critical recall clears the threshold.`},
+      {t:`Run + model visible at <code>localhost:5000</code>; Day-3 commit pushed.`},
+    ],
+    resources:[
+      {l:"HF — fine-tuning", u:"https://huggingface.co/docs/transformers/training"},
+      {l:"HF — datasets loading", u:"https://huggingface.co/docs/datasets/loading"},
+      {l:"scikit-learn — model evaluation", u:"https://scikit-learn.org/stable/modules/model_evaluation.html"},
+      {l:"MLflow — tracking", u:"https://mlflow.org/docs/latest/tracking.html"},
+      {l:"MLflow — model registry", u:"https://mlflow.org/docs/latest/model-registry.html"},
+    ],
+    repo:["classifier/train.py","data/README.md"],
+    payoff:"I gate promotion on critical-class recall — accuracy hides the failure that actually hurts.",
+  },
+  {
+    n:4, title:"Serving with resilience + routing",
+    desc:"A serving layer that loads the model, classifies text, and routes — with timeouts and a fallback so it degrades instead of failing.",
+    full:"Stand up the serving layer that loads the model, classifies text, and routes — with timeouts and a fallback so it degrades instead of failing.",
+    objectives:[
+      {star:true, t:`Explain ${T('timeouts, retries, and graceful degradation','Concrete code: a deadline on inference, bounded retries, and a cheap fallback that still returns a valid answer — not buzzwords.')} as concrete code, not buzzwords.`},
+      {t:`Explain &quot;${T('model scores, policy decides','The model only produces a score; a separate deterministic, unit-tested router makes the high-stakes routing decision so it stays auditable.')}&quot; and why the router is deterministic + unit-tested.`},
+      {t:`Explain loading the model ${T('once at startup','Load the model a single time when the app boots (module-level / lifespan), not on every request — avoids per-request load cost.')} vs per-request, and async serving.`},
+    ],
+    steps:[
+      {t:`In <code>classifier/predict.py</code>, load the model from the MLflow registry${L('https://mlflow.org/docs/latest/python_api/mlflow.pyfunc.html','MLflow — load a model (pyfunc)')} <b>once at startup</b> (module-level or FastAPI lifespan${L('https://fastapi.tiangolo.com/advanced/events/','FastAPI — lifespan')}), not per request.`},
+      {t:`Implement <code>classify()</code>: tokenize → infer → return a <code>Classification</code> with <code>score</code>, <code>keywords</code>, <code>model_version</code>, <code>infer_latency_ms</code>.`},
+      {t:`Wrap inference in a timeout (<code>asyncio.wait_for</code> or a thread + deadline) using <code>settings.infer_timeout_ms</code>; on timeout/exception, call a cheap ${T('keyword-rule fallback','A fast deterministic rule layer that returns a Classification when the model is slow or down — the degradation path.')} that still returns a <code>Classification</code>.`},
+      {t:`Implement <code>router/router.py</code> <code>decide()</code>: map urgency → <code>destination</code> + <code>suggested_actions</code>, always <code>requires_human_confirmation=True</code>.`},
+      {t:`Wire <code>POST /classify</code> and <code>POST /route</code> in <code>api/main.py</code>${L('https://fastapi.tiangolo.com/tutorial/','FastAPI — first steps')}.`},
+      {t:`Add an integration test in <code>tests/integration/test_api.py</code>; then deliberately break the model and confirm the fallback path still returns a decision.`},
+      {t:`Commit: <code>feat: resilient inference + deterministic router + API endpoints</code>.`},
+    ],
+    deliverables:[
+      {t:`<code>predict.py</code> loads at startup, enforces timeout, falls back on failure.`},
+      {t:`<code>router.py</code> returns a <code>RouteDecision</code> with human-confirmation required.`},
+      {t:`<code>/classify</code> and <code>/route</code> work; integration test passes incl. the fallback case.`},
+      {t:`Day-4 commit pushed.`},
+    ],
+    resources:[
+      {l:"FastAPI — first steps", u:"https://fastapi.tiangolo.com/tutorial/"},
+      {l:"FastAPI — lifespan (startup load)", u:"https://fastapi.tiangolo.com/advanced/events/"},
+      {l:"MLflow — load a model (pyfunc)", u:"https://mlflow.org/docs/latest/python_api/mlflow.pyfunc.html"},
+    ],
+    repo:["classifier/predict.py","router/router.py","api/main.py"],
+    payoff:"It fails predictably — timeout → keyword fallback → human-in-the-loop. It degrades, it doesn't drop.",
+  },
+  {
+    n:5, title:"End-to-end streaming path (turn Day 1 green)",
+    desc:"Connect every stage behind a WebSocket so a streamed call produces live routing decisions — and make your Day-1 test pass.",
+    full:"Connect every stage behind a WebSocket so a streamed call produces live routing decisions — and make your Day-1 acceptance test pass.",
+    objectives:[
+      {t:`Explain ${T('WebSocket streaming','A persistent bidirectional connection — the client streams audio chunks up and receives routing decisions back over the same socket.')} in FastAPI and basic ${T('backpressure','When the consumer is slower than the producer, you slow or buffer the stream so you don\'t overflow memory.')}.`},
+      {t:`Explain how the full path composes: <code>audio → ASR → classify → route</code>.`},
+    ],
+    steps:[
+      {t:`Add a <code>WS /stream</code> endpoint${L('https://fastapi.tiangolo.com/advanced/websockets/','FastAPI — WebSockets')} in <code>api/main.py</code>.`},
+      {t:`For each incoming <code>AudioChunk</code>: transcribe (Day 2) → classify (Day 4) → decide (Day 4); send the <code>RouteDecision</code> back as JSON.`},
+      {t:`Handle <code>is_final</code> (finalize the transcript) and client disconnects cleanly.`},
+      {t:`Update <code>tests/e2e/test_pipeline.py</code> to stream a known <b>critical</b> sample through the endpoint${L('https://fastapi.tiangolo.com/advanced/testing-websockets/','FastAPI — testing WebSockets')} and assert <code>dispatch_fast_path</code>; remove the <code>xfail</code>.`},
+      {t:`Run <code>make test</code> — everything green (unit + integration + e2e).`},
+      {t:`Do a manual demo and watch decisions update live. Commit: <code>feat: end-to-end streaming pipeline (e2e green)</code>.`},
+    ],
+    deliverables:[
+      {t:`<code>WS /stream</code> streams <code>AudioChunk</code>s in and <code>RouteDecision</code>s out.`},
+      {t:`The Day-1 e2e test passes.`},
+      {t:`<code>make test</code> fully green; manual demo works.`},
+      {t:`Day-5 commit pushed.`},
+    ],
+    resources:[
+      {l:"FastAPI — WebSockets", u:"https://fastapi.tiangolo.com/advanced/websockets/"},
+      {l:"FastAPI — testing WebSockets", u:"https://fastapi.tiangolo.com/advanced/testing-websockets/"},
+    ],
+    repo:["api/main.py","tests/e2e/test_pipeline.py"],
+    payoff:"You can demo the whole system and walk any layer on request.",
+  },
+  {
+    n:6, title:"Observability, benchmarks, hardening",
+    desc:"Add metrics, produce real latency and noisy-audio numbers, and add a drift check. These numbers are your differentiator.",
+    full:"Make the system measurable: add metrics, produce real latency and noisy-audio numbers, and add a drift check. These numbers are your differentiator.",
+    objectives:[
+      {t:`Explain the ${T('four golden signals','Latency, traffic, errors, saturation — Google SRE\'s minimal set for monitoring a user-facing system.')} (latency, traffic, errors, saturation)${L('https://sre.google/sre-book/monitoring-distributed-systems/','Google SRE — golden signals')}.`},
+      {t:`Explain ASR eval (${T('WER','Word Error Rate — the standard ASR accuracy metric; report it stratified by noise level / accent.')}) and why you stratify accuracy by noise level.`},
+      {star:true, t:`Explain ${T('drift','Input distribution shifts away from training data over time, silently degrading the model — often around month 3.')} and why it breaks models ~3 months in (${T('PSI / KS test','Population Stability Index / Kolmogorov–Smirnov test — statistics that quantify how far live data has drifted from the training baseline.')}).`},
+    ],
+    steps:[
+      {t:`Add Prometheus metrics + a request-latency histogram to the API (use <code>prometheus-fastapi-instrumentator</code>${L('https://github.com/trallnag/prometheus-fastapi-instrumentator','prometheus-fastapi-instrumentator')}, or a manual <code>Histogram</code>).`},
+      {t:`Create <code>benchmarks/run.py</code>: replay N sample calls through <code>/stream</code>, record end-to-end latency, compute ${T('P50/P99','Median and 99th-percentile latency — the typical case and the slow tail.')}.`},
+      {t:`Add background noise to your clips (numpy mix, or <code>audiomentations</code>${L('https://github.com/iver56/audiomentations','audiomentations')}) and re-measure classifier accuracy — report the clean-vs-noisy delta.`},
+      {t:`Write <code>BENCHMARKS.md</code> with the actual numbers.`},
+      {t:`Implement <code>monitoring/drift.py</code>: persist a training baseline profile, compare recent live stats (KS test via <code>scipy.stats.ks_2samp</code>${L('https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ks_2samp.html','scipy — ks_2samp')}, or <code>evidently</code>), flag drift.`},
+      {t:`Commit: <code>feat: metrics + latency/noise benchmarks + drift monitor</code>.`},
+    ],
+    deliverables:[
+      {t:`API exposes Prometheus metrics + latency histogram.`},
+      {t:`<code>BENCHMARKS.md</code> with measured P50/P99 latency and noisy-audio accuracy.`},
+      {t:`<code>drift.py</code> does a working baseline-vs-live comparison.`},
+      {t:`Day-6 commit pushed.`},
+    ],
+    resources:[
+      {l:"Google SRE — golden signals", u:"https://sre.google/sre-book/monitoring-distributed-systems/"},
+      {l:"prometheus-fastapi-instrumentator", u:"https://github.com/trallnag/prometheus-fastapi-instrumentator"},
+      {l:"audiomentations (audio augmentation)", u:"https://github.com/iver56/audiomentations"},
+      {l:"scipy — ks_2samp (KS test)", u:"https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ks_2samp.html"},
+    ],
+    repo:["monitoring/drift.py","api/main.py"],
+    payoff:"Here are my measured latency and noisy-audio accuracy numbers — almost no candidate brings these.",
+  },
+  {
+    n:7, title:"Deploy one AWS slice + polish",
+    desc:"Put one real piece in the cloud with IaC, prove it's reachable, tear it down, and finalize the README.",
+    full:"Put one real piece in the cloud with infrastructure-as-code, prove it's reachable, tear it down, and finalize the README. Then you can say &quot;it's deployed.&quot;",
+    objectives:[
+      {t:`Explain ${T('ECS Fargate vs Lambda-container','Fargate runs an always-on container (no cold start, steady cost). Lambda container is serverless (scale-to-zero, but cold starts) — pick per traffic pattern.')} for model serving (cold start vs always-on, cost).`},
+      {t:`Explain why infra is in code (Terraform) and what a ${T('remote state backend','Stores Terraform\'s state file remotely (e.g. S3) so it\'s shared, locked, and not lost on your laptop.')} buys you.`},
+    ],
+    steps:[
+      {t:`Build the API image (<code>Dockerfile</code> already exists) and define an ECR repo in <code>infra/terraform/main.tf</code>${L('https://registry.terraform.io/providers/hashicorp/aws/latest/docs','Terraform — AWS provider')}; push the image.`},
+      {t:`Define the runtime: a Fargate service (always-on)${L('https://developer.hashicorp.com/terraform/tutorials/aws/aws-ecs','ECS Fargate — Terraform tutorial')} <b>or</b> the classifier as a Lambda container image (serverless)${L('https://docs.aws.amazon.com/lambda/latest/dg/images-create.html','AWS — Lambda container images')}, plus a CloudWatch log group.`},
+      {t:`<code>terraform init</code> → <code>plan</code> → <code>apply</code>; hit the deployed <code>/healthz</code>.`},
+      {t:`<code>terraform destroy</code> to avoid ongoing cost.`},
+      {t:`Finalize <code>README.md</code>: architecture diagram + your Day-6 benchmark numbers + a note that it's deployable on demand.`},
+      {t:`Commit: <code>feat: AWS deploy via Terraform + final README</code>.`},
+    ],
+    deliverables:[
+      {t:`<code>main.tf</code> provisions ECR + Fargate/Lambda + CloudWatch.`},
+      {t:`Deployed <code>/healthz</code> responds; <code>terraform destroy</code> works.`},
+      {t:`<code>README.md</code> finalized with diagram + benchmarks.`},
+      {t:`Day-7 commit pushed.`},
+    ],
+    resources:[
+      {l:"Terraform — AWS provider", u:"https://registry.terraform.io/providers/hashicorp/aws/latest/docs"},
+      {l:"ECS Fargate (Terraform tutorial)", u:"https://developer.hashicorp.com/terraform/tutorials/aws/aws-ecs"},
+      {l:"AWS — Lambda container images", u:"https://docs.aws.amazon.com/lambda/latest/dg/images-create.html"},
+    ],
+    repo:["infra/terraform/main.tf","Dockerfile","README.md"],
+    payoff:"It's deployed on AWS with IaC — here's the endpoint and the teardown.",
+  },
+];
+
+/* ---------- reference panels ---------- */
+const PANELS = [
+  {
+    id:"toolbox", icon:"🧰", title:"What you already have (your toolbox)",
+    intro:"The repo is scaffolded — you are filling in logic, not starting from a blank page.",
+    items:[
+      `<b>Contracts:</b> <code>common/schemas.py</code> — the data models every stage passes. Read this first.`,
+      `<b>Config &amp; logging:</b> <code>common/config.py</code> (env-based settings), <code>common/logging.py</code> (JSON logs). Done for you.`,
+      `<b>Stubs to implement:</b> every file with a <code>TODO(you)</code> marker — run <code>grep -rn "TODO(you)" src</code>.`,
+      `<b>Commands:</b> <code>Makefile</code> — <code>make install</code>, <code>test-unit</code>, <code>test</code>, <code>run-api</code>, <code>train</code>, <code>up</code>.`,
+      `<b>Local infra:</b> <code>docker-compose.yml</code> brings up MLflow (registry) + the API. <code>Dockerfile</code> builds the API image.`,
+      `<b>CI:</b> <code>.github/workflows/ci.yml</code> runs lint + type + unit tests on every push.`,
+      `<b>Concept reference:</b> <code>PRINCIPLES.md</code> — the &quot;why&quot; behind each piece, for interview prep.`,
+    ],
+    foot:`<b>How to use each day:</b> read the description, follow the steps in order, tick the deliverables, and use the resources when stuck. A day is done only when every box is ticked.`,
+  },
+  {
+    id:"scaling", icon:"📈", title:"After the interviews — your &quot;how would this scale?&quot; answer",
+    intro:"Naming these as <i>deliberately deferred</i> shows judgment — you scoped for the deadline and know the production path.",
+    items:[
+      `Real streaming bus (Kinesis/Kafka) replacing the in-process generator`,
+      `Horizontal scaling on Kubernetes`,
+      `Airflow/Temporal for retraining orchestration`,
+      `Ray for distributed inference/training`,
+      `A feature store`,
+      `Canary deploys with auto-rollback on metric regression`,
+      `A model cascade — fast model on every chunk, escalate ambiguous cases`,
+    ],
+  },
+  {
+    id:"jobmap", icon:"🎯", title:"Map to the job description",
+    intro:"Every piece of this plan ties back to a line in the JD.",
+    pills:["Python / SQL","Containerized (Docker)","Serverless (Lambda)","Cloud (AWS)","MLOps full lifecycle: train→register→serve→monitor","Latency &amp; noisy-audio benchmarks","Data security / compartmentalization (no PII)","Resilient real-time streaming","CI/CD (GitHub Actions)","Testing methodology"],
+  },
+];
+
+/* ============================================================
+   RENDER + STATE
+   ============================================================ */
+const KEY = "triage-stream-progress-v1";
+let state = {};
+try{ state = JSON.parse(localStorage.getItem(KEY)) || {}; }catch(e){ state = {}; }
+const save = () => localStorage.setItem(KEY, JSON.stringify(state));
+
+const host = (u)=>{ try{ return new URL(u).hostname.replace(/^www\./,''); }catch(e){ return ""; } };
+
+function checklist(items, prefix, ordered){
+  return `<ul class="checks${ordered?' ordered':''}">` + items.map((it,i)=>{
+    const id = `${prefix}-${i}`;
+    const on = state[id] ? " checked" : "";
+    const star = it.star ? ` <span class="star-badge" data-tip="A gap your screener already exposed — review this first.">⭐</span>` : "";
+    return `<li class="check">
+      <input type="checkbox" id="${id}" data-id="${id}"${on} />
+      <label for="${id}">${it.t}${star}</label>
+    </li>`;
+  }).join("") + `</ul>`;
+}
+
+function renderDays(){
+  document.getElementById("days").innerHTML = DAYS.map((d)=>{
+    const ids = [];
+    d.objectives.forEach((_,i)=>ids.push(`d${d.n}-obj-${i}`));
+    d.steps.forEach((_,i)=>ids.push(`d${d.n}-step-${i}`));
+    d.deliverables.forEach((_,i)=>ids.push(`d${d.n}-del-${i}`));
+    const open = d.n===1 ? " open" : "";
+    const res = d.resources.map(r=>`<a href="${r.u}" target="_blank" rel="noopener"><span class="ic">↗</span>${r.l}<span class="host">${host(r.u)}</span></a>`).join("");
+    const repo = `<div class="repo"><span class="ic" style="color:var(--faint)">📁 repo</span> ${d.repo.map(p=>`<code>${p}</code>`).join(" ")}</div>`;
+    return `<details class="day" data-day="${d.n}" data-ids='${JSON.stringify(ids)}'${open}>
+      <summary>
+        <div class="daynum">${d.n}</div>
+        <div class="daymeta"><div class="t">${d.title}</div><div class="d">${d.desc}</div></div>
+        <div class="dayprog"><div class="ring" id="ring-${d.n}"><b id="ringb-${d.n}">0%</b></div><span class="chev">▶</span></div>
+      </summary>
+      <div class="body">
+        <p style="color:var(--muted);margin:14px 0 0;font-size:14px">${d.full}</p>
+        <div class="block"><h4>Learning objectives</h4>${checklist(d.objectives,`d${d.n}-obj`,false)}</div>
+        <div class="block"><h4>Steps</h4>${checklist(d.steps,`d${d.n}-step`,true)}</div>
+        <div class="block"><h4>Deliverables</h4>${checklist(d.deliverables,`d${d.n}-del`,false)}</div>
+        <div class="block"><h4>Resources</h4><div class="res">${res}${repo}</div></div>
+        <div class="payoff"><div class="lab">Interview payoff</div><div class="q">&ldquo;${d.payoff}&rdquo;</div></div>
+      </div>
+    </details>`;
+  }).join("");
+}
+
+function renderPanels(){
+  document.getElementById("panels").innerHTML = PANELS.map(p=>{
+    let inner = `<p style="color:var(--muted);margin:12px 0 14px;font-size:14px">${p.intro}</p>`;
+    if(p.items) inner += `<ul>${p.items.map(i=>`<li>${i}</li>`).join("")}</ul>`;
+    if(p.pills) inner += `<div class="pillrow">${p.pills.map(x=>`<span class="pill">${x}</span>`).join("")}</div>`;
+    if(p.foot) inner += `<div class="note" style="margin-top:16px">${p.foot}</div>`;
+    return `<details class="panel" id="${p.id}">
+      <summary><span class="t">${p.icon} ${p.title}</span></summary>
+      <div class="body">${inner}</div>
+    </details>`;
+  }).join("");
+}
+
+function updateProgress(){
+  let total=0, done=0;
+  DAYS.forEach(d=>{
+    const el = document.querySelector(`details.day[data-day="${d.n}"]`);
+    const ids = JSON.parse(el.getAttribute("data-ids"));
+    const dn = ids.filter(id=>state[id]).length;
+    total += ids.length; done += dn;
+    const pct = Math.round(dn/ids.length*100);
+    const ring = document.getElementById(`ring-${d.n}`);
+    ring.style.setProperty("--p", pct);
+    document.getElementById(`ringb-${d.n}`).textContent = pct+"%";
+    el.classList.toggle("done", dn===ids.length);
+  });
+  const gp = total? Math.round(done/total*100):0;
+  document.getElementById("globalFill").style.width = gp+"%";
+  document.getElementById("globalPct").textContent = gp+"%";
+}
+
+document.addEventListener("change", (e)=>{
+  if(e.target.matches('input[type="checkbox"][data-id]')){
+    const id = e.target.getAttribute("data-id");
+    if(e.target.checked) state[id]=1; else delete state[id];
+    save(); updateProgress();
+  }
+});
+
+document.getElementById("resetBtn").addEventListener("click", ()=>{
+  if(confirm("Reset all progress? This clears every ticked box.")){
+    state={}; save();
+    document.querySelectorAll('input[type="checkbox"][data-id]').forEach(c=>c.checked=false);
+    updateProgress();
+  }
+});
+
+/* theme */
+const themeBtn = document.getElementById("themeBtn");
+const applyTheme = (t)=>{ document.documentElement.setAttribute("data-theme",t); localStorage.setItem("triage-theme",t); };
+themeBtn.addEventListener("click", ()=>{
+  const cur = document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark";
+  applyTheme(cur);
+});
+const savedTheme = localStorage.getItem("triage-theme") || (matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");
+applyTheme(savedTheme);
+
+renderDays();
+renderPanels();
+updateProgress();
+</script>
+</body>
+</html>
