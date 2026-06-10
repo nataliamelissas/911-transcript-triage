@@ -3,9 +3,11 @@ import logging
 import sys
 
 try:
-    from pythonjsonlogger import jsonlogger
+    # canonical location since python-json-logger 3.0 (the old
+    # `pythonjsonlogger.jsonlogger` path is deprecated)
+    from pythonjsonlogger.json import JsonFormatter
 except ImportError:  # keep import-safe before deps are installed
-    jsonlogger = None
+    JsonFormatter = None  # type: ignore[assignment, misc]
 
 
 def get_logger(name: str) -> logging.Logger:
@@ -13,9 +15,9 @@ def get_logger(name: str) -> logging.Logger:
     if logger.handlers:
         return logger
     handler = logging.StreamHandler(sys.stdout)
-    if jsonlogger:
+    if JsonFormatter:
         handler.setFormatter(
-            jsonlogger.JsonFormatter("%(asctime)s %(levelname)s %(name)s %(message)s")
+            JsonFormatter("%(asctime)s %(levelname)s %(name)s %(message)s")
         )
     logger.addHandler(handler)
     logger.setLevel(logging.INFO)

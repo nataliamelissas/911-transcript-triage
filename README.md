@@ -65,13 +65,17 @@ project mirroring the kind of system public-safety AI teams build.
 
 ## Quickstart
 
-```bash
+```powershell
+.\Scripts\Activate.ps1  # activate the venv FIRST (create once: python -m venv .)
 make install            # deps + editable install
-.\Scripts\Activate.ps1  # activates venv
 make test-unit          # fast unit tests (start here)
 docker compose up       # mlflow registry + api locally
 make run-api            # API at http://localhost:8000  (/docs for Swagger)
 ```
+
+No `make` on Windows? Each target is a one-liner — run it directly, e.g.
+`pip install -r requirements.txt; pip install -e .` for `make install`
+(see [Makefile](Makefile)).
 
 ## Status
 

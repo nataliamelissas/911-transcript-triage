@@ -13,7 +13,9 @@ class Settings(BaseSettings):
     chunk_seconds: float = 1.0          # streaming chunk length -> latency knob
 
     # Classifier
-    classifier_model_uri: str = "models:/urgency-classifier/Production"
+    # Alias-based registry URI (registry *stages* are deprecated since MLflow 2.9;
+    # you mark the deployable version with an alias, e.g. "champion")
+    classifier_model_uri: str = "models:/urgency-classifier@champion"
     mlflow_tracking_uri: str = "http://localhost:5000"
 
     # Resilience (you list these in your own engineering principles)

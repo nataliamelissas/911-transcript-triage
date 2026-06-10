@@ -15,9 +15,10 @@ retrain, each step automated.
 draw the loop and name the tool at each stage.
 
 **Tracking vs registry vs serving** — three distinct things people conflate.
-Tracking = experiment runs/metrics (MLflow Tracking). Registry = versioned,
-promotable models. Serving = the runtime that loads a registry model.
-*Where:* `train.py` logs runs; API loads `models:/urgency-classifier/Production`.
+Tracking = experiment runs/metrics (MLflow Tracking). Registry = versioned
+models, with the deployable one marked by an *alias* (stages are deprecated).
+Serving = the runtime that loads a registry model.
+*Where:* `train.py` logs runs; API loads `models:/urgency-classifier@champion`.
 *Why:* sloppy candidates say "MLflow" as one blob; precision signals seniority.
 
 ⭐ **Promotion gates on the *right* metric** — register only if **critical-class

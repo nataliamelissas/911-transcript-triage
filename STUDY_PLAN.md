@@ -77,11 +77,11 @@ measured latency.
 - [ ] Explain why you simulate the stream instead of using real 911 audio (PII / compartmentalization).
 
 ### Steps
-1. Get one sample `.wav` (synthesize with a TTS tool, or grab a short public clip) and put it in `data/sample/` (see `data/README.md`).
+1. Get one sample `.wav` (synthesize with a TTS tool, or grab a short public clip) and put it in `data/sample/` (see `data/README.md`). It must be **16 kHz mono 16-bit PCM** — what `AudioChunk` and Whisper assume; convert with `ffmpeg -i clip.mp3 -ar 16000 -ac 1 -sample_fmt s16 call.wav` if needed.
 2. Skim the faster-whisper README quickstart (Resources) so you know the API shape.
-3. Implement `ingest/stream_simulator.py`: load the wav (`soundfile`/`wave`), slice into `settings.chunk_seconds` windows, base64-encode each PCM window into an `AudioChunk`, and `yield` them with `asyncio.sleep` to mimic real time; flag the last as `is_final`.
-4. Implement `asr/transcriber.py`: lazy-load `WhisperModel`, decode base64 → float32 numpy, keep a rolling buffer, call `transcribe`, and return a `TranscriptChunk` with `asr_latency_ms` measured.
-5. Write a small demo script that pipes the simulator into the transcriber and prints live partial text + per-chunk latency.
+3. Implement `ingest/stream_simulator.py`: load the wav (stdlib `wave` — gives raw PCM bytes, no extra dependency; `readframes(n)` counts *frames*, not bytes — one frame = one int16 sample = 2 bytes for mono, so `frames_per_chunk = int(getframerate() * settings.chunk_seconds)`; sanity-check `getframerate()==16000`, `getnchannels()==1`, `getsampwidth()==2` first), slice into `settings.chunk_seconds` windows (already in the scaffold: `common/config.py` defines it, default 1.0 s, override via `TS_CHUNK_SECONDS`; import with `from triage_stream.common.config import settings`), base64-encode each PCM window into an `AudioChunk` (contract already in `common/schemas.py`; `pcm_b64 = base64.b64encode(chunk_bytes).decode()` — `b64encode` returns bytes, decode to get the `str` the schema wants since JSON can't carry raw bytes; `seq` = per-chunk counter, `ts = datetime.now(timezone.utc)`), and `yield` them with `asyncio.sleep` to mimic real time; flag the last as `is_final` (set on the last real chunk, not an empty trailer — a short read isn't a reliable signal since files can divide evenly; use `wf.tell() >= wf.getnframes()` after each read, or precompute `math.ceil(total_frames / frames_per_chunk)` and compare `seq`).
+4. Implement `asr/transcriber.py`: lazy-load `WhisperModel` (model/device come from `settings.whisper_model` / `settings.whisper_device`, already in `common/config.py`; the `Transcriber` stub with the lazy `_model` slot also exists), decode base64 → float32 numpy (`np.frombuffer(base64.b64decode(pcm_b64), dtype=np.int16).astype(np.float32) / 32768.0` — int16 full scale is 32768, dividing normalizes to −1..1, what `transcribe()` expects), keep a rolling buffer (append each chunk to the call-so-far array and transcribe the accumulated audio; finalize on `is_final`), call `transcribe`, and return a `TranscriptChunk` (contract already in `common/schemas.py`) with `asr_latency_ms` measured.
+5. Write a small demo script that pipes the simulator into the transcriber and prints live partial text + per-chunk latency (shape: an `async main()` doing `async for chunk in simulate_call(...)` → `transcribe_chunk(chunk)`, run with `asyncio.run(main())`).
 6. Note your P50 latency. Commit: `feat: streaming audio simulator + faster-whisper ASR`.
 
 ### Deliverables
@@ -92,7 +92,7 @@ measured latency.
 
 ### Resources
 - faster-whisper: https://github.com/SYSTRAN/faster-whisper
-- Reading/writing audio: https://python-soundfile.readthedocs.io/
+- Reading/writing audio (stdlib): https://docs.python.org/3/library/wave.html
 - Repo: `ingest/stream_simulator.py`, `asr/transcriber.py`, `schemas.py`
 
 **Interview payoff:** real numbers — "P50 ASR latency was ~X ms at 1s chunks."
@@ -111,11 +111,11 @@ register it only if it clears a recall bar. This is the heart of the MLOps story
 
 ### Steps
 1. Get a public/synthetic emergency-transcript dataset (`data/README.md`) and load it with HF `datasets`.
-2. Map its labels to the `Urgency` enum; make a **stratified** train/val/test split (`sklearn.model_selection.train_test_split`).
+2. Map its labels to the `Urgency` enum (already in `common/schemas.py`: CRITICAL/HIGH/MODERATE/LOW); make a **stratified** train/val/test split (`sklearn.model_selection.train_test_split`).
 3. Tokenize with `AutoTokenizer.from_pretrained("distilbert-base-uncased")`.
 4. Fine-tune with `transformers.Trainer`; in `compute_metrics`, report **per-class** precision/recall/F1 (`sklearn.metrics`).
-5. Start MLflow: `make up` (or `docker compose up mlflow`); set the tracking URI; `mlflow.log_params/log_metrics` and `mlflow.transformers.log_model(..., registered_model_name="urgency-classifier")`.
-6. Add the gate: only register/promote if critical-class recall ≥ your threshold.
+5. Start MLflow: `make up` (or `docker compose up mlflow`); set the tracking URI (`settings.mlflow_tracking_uri`, already in `common/config.py`); `mlflow.log_params/log_metrics` and `mlflow.transformers.log_model(..., name="urgency-classifier", registered_model_name="urgency-classifier")` (MLflow 3: `name`, not `artifact_path`).
+6. Add the gate: only set the `@champion` alias (`MlflowClient.set_registered_model_alias`) if critical-class recall ≥ your threshold. Aliases replace the deprecated registry stages; the API loads `models:/urgency-classifier@champion`.
 7. Open `localhost:5000`, confirm the run + registered model. Commit: `feat: train + MLflow tracking + recall-gated registry`.
 
 ### Deliverables
@@ -128,8 +128,9 @@ register it only if it clears a recall bar. This is the heart of the MLOps story
 - HF fine-tuning: https://huggingface.co/docs/transformers/training
 - HF datasets: https://huggingface.co/docs/datasets/loading
 - Metrics: https://scikit-learn.org/stable/modules/model_evaluation.html
-- MLflow tracking: https://mlflow.org/docs/latest/tracking.html
-- MLflow registry: https://mlflow.org/docs/latest/model-registry.html
+- MLflow tracking: https://mlflow.org/docs/latest/ml/tracking/
+- MLflow registry workflow (aliases): https://mlflow.org/docs/latest/ml/model-registry/workflow/
+- Open dataset option: https://huggingface.co/datasets/community-datasets/disaster_response_messages
 - Repo: `classifier/train.py`, `data/README.md`
 
 **Interview payoff:** "I gate promotion on critical-class recall — accuracy hides the failure that actually hurts."
@@ -147,12 +148,12 @@ and routes — with timeouts and a fallback so it degrades instead of failing.
 - [ ] Explain loading the model once at startup vs per-request, and async serving.
 
 ### Steps
-1. In `classifier/predict.py`, load the model from the MLflow registry **once at startup** (module-level or FastAPI lifespan), not per request.
-2. Implement `classify()`: tokenize → infer → return a `Classification` with `score`, `keywords`, `model_version`, `infer_latency_ms`.
-3. Wrap inference in a timeout (`asyncio.wait_for` or a thread with a deadline) using `settings.infer_timeout_ms`; on timeout/exception, call a cheap **keyword-rule fallback** that still returns a `Classification`.
-4. Implement `router/router.py` `decide()`: map urgency → `destination` + `suggested_actions`, always `requires_human_confirmation=True`.
-5. Wire `POST /classify` and `POST /route` in `api/main.py`.
-6. Add an integration test in `tests/integration/test_api.py`; then deliberately break the model and confirm the fallback path still returns a decision.
+1. In `classifier/predict.py` (the `UrgencyClassifier` stub and `settings.classifier_model_uri` — `models:/urgency-classifier@champion` — already exist), load the model from the MLflow registry **once at startup** (module-level or FastAPI lifespan), not per request.
+2. Implement `classify()`: tokenize → infer → return a `Classification` (contract already in `common/schemas.py`; `score` is validated to 0–1) with `score`, `keywords`, `model_version`, `infer_latency_ms`.
+3. Wrap inference in a timeout (`asyncio.wait_for` or a thread with a deadline) using `settings.infer_timeout_ms` (already in `common/config.py`, default 800 ms; `settings.max_retries` is there too); on timeout/exception, call a cheap **keyword-rule fallback** that still returns a `Classification`.
+4. Implement `router/router.py` `decide()` (stub already exists): map urgency → `destination` + `suggested_actions`, always `requires_human_confirmation=True` (`RouteDecision` already defaults it to True — never unset it).
+5. Wire `POST /classify` and `POST /route` in `api/main.py` (the app with `/healthz` and `/readyz` already exists — you add the endpoints).
+6. Add an integration test in `tests/integration/test_api.py` (already exists with a working `/healthz` TestClient example); then deliberately break the model and confirm the fallback path still returns a decision.
 7. Commit: `feat: resilient inference + deterministic router + API endpoints`.
 
 ### Deliverables
@@ -164,7 +165,7 @@ and routes — with timeouts and a fallback so it degrades instead of failing.
 ### Resources
 - FastAPI first steps: https://fastapi.tiangolo.com/tutorial/
 - FastAPI lifespan (startup load): https://fastapi.tiangolo.com/advanced/events/
-- Load an MLflow model: https://mlflow.org/docs/latest/python_api/mlflow.pyfunc.html
+- Load an MLflow model: https://mlflow.org/docs/latest/api_reference/python_api/mlflow.pyfunc.html
 - Repo: `classifier/predict.py`, `router/router.py`, `api/main.py`
 
 **Interview payoff:** "It fails predictably — timeout → keyword fallback → human-in-the-loop. It degrades, it doesn't drop."
@@ -214,11 +215,11 @@ noisy-audio numbers, and add a drift check. These numbers are your differentiato
 - [ ] ⭐ Explain drift and why it breaks models ~3 months in (PSI / KS test).
 
 ### Steps
-1. Add Prometheus metrics + a request-latency histogram to the API (use `prometheus-fastapi-instrumentator` for speed, or a manual `Histogram`).
-2. Create `benchmarks/run.py`: replay N sample calls through `/stream`, record end-to-end latency, compute P50/P99.
-3. Add background noise to your clips (numpy mix, or `audiomentations`) and re-measure classifier accuracy — report the clean-vs-noisy delta.
+1. Add Prometheus metrics + a request-latency histogram to the API (use `prometheus-fastapi-instrumentator` — already pinned in `requirements.txt` — or a manual `Histogram`).
+2. Create `benchmarks/run.py`: replay N sample calls through `/stream`, record end-to-end latency, compute P50/P99 (`np.percentile(latencies, [50, 99])`).
+3. Add background noise to your clips (numpy mix — target-SNR math: `gain = (rms_clean / rms_noise) * 10 ** (-snr_db / 20)`, `noisy = np.clip(clean + gain * noise, -1, 1)`, try 20/10/5 dB — or `audiomentations`, already in `requirements.txt`) and re-measure classifier accuracy — report the clean-vs-noisy delta.
 4. Write `BENCHMARKS.md` with the actual numbers.
-5. Implement `monitoring/drift.py`: persist a training baseline profile, compare recent live stats (KS test via `scipy.stats.ks_2samp`, or use `evidently`), flag drift.
+5. Implement `monitoring/drift.py` (the `check_drift()` stub exists; `scipy` is already in `requirements.txt`): persist a training baseline profile, compare recent live stats (KS test via `scipy.stats.ks_2samp`, or use `evidently`), flag drift.
 6. Commit: `feat: metrics + latency/noise benchmarks + drift monitor`.
 
 ### Deliverables
@@ -249,7 +250,7 @@ deployed."
 - [ ] Explain why infra is in code (Terraform) and what a remote state backend buys you.
 
 ### Steps
-1. Build the API image (`Dockerfile` already exists) and define an ECR repo in `infra/terraform/main.tf`; push the image.
+1. Build the API image (`Dockerfile` already exists) and define an ECR repo in `infra/terraform/main.tf` (already exists as a commented TODO checklist of the exact resources); push the image.
 2. Define the runtime: a Fargate service (always-on) **or** the classifier as a Lambda container image (serverless), plus a CloudWatch log group.
 3. `terraform init` → `plan` → `apply`; hit the deployed `/healthz`.
 4. `terraform destroy` to avoid ongoing cost.
@@ -264,7 +265,8 @@ deployed."
 
 ### Resources
 - Terraform AWS provider: https://registry.terraform.io/providers/hashicorp/aws/latest/docs
-- ECS Fargate (Terraform): https://developer.hashicorp.com/terraform/tutorials/aws/aws-ecs
+- ECS Fargate with Terraform: https://spacelift.io/blog/terraform-ecs
+- ECS on Fargate (AWS blog): https://aws.amazon.com/blogs/developer/provision-aws-infrastructure-using-terraform-by-hashicorp-an-example-of-running-amazon-ecs-tasks-on-aws-fargate/
 - Lambda container images: https://docs.aws.amazon.com/lambda/latest/dg/images-create.html
 - Repo: `infra/terraform/main.tf`, `Dockerfile`, `README.md`
 

@@ -2,7 +2,8 @@
 #   api  <-> mlflow (model registry)   |  add kinesis/kafka later for streaming
 services:
   mlflow:
-    image: ghcr.io/mlflow/mlflow:v2.14.1
+    # Keep this major version in sync with the mlflow client pin in requirements.txt
+    image: ghcr.io/mlflow/mlflow:v3.13.0
     command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:////mlruns/mlflow.db --default-artifact-root /mlruns
     ports: ["5000:5000"]
     volumes: ["mlruns:/mlruns"]
