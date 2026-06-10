@@ -74,8 +74,7 @@ make run-api            # API at http://localhost:8000  (/docs for Swagger)
 ## Status
 
 Scaffold + contracts + CI in place. Core logic is built across a 7-day plan —
-see **[STUDY_PLAN.md](STUDY_PLAN.md)**. Search the source for `TODO(you)` to find
-each implementation point.
+see **[STUDY_PLAN.md](STUDY_PLAN.md)**.
 
 ## Tech
 
