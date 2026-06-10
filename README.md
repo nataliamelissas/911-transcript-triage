@@ -1,5 +1,7 @@
 # triage-stream
 
+> **Note:** The scaffold and initial structure were generated with AI assistance. All subsequent implementation is written by hand without AI, except for minor IDE autocompletions. This is a learning project.
+
 Real-time **911-transcript triage**: streaming audio → ASR → urgency
 classification → routing, built to production-engineering standards. A portfolio
 project mirroring the kind of system public-safety AI teams build.
