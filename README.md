@@ -14,6 +14,32 @@ project mirroring the kind of system public-safety AI teams build.
 ## Architecture
 
 ```
+
+## Converting audio to 16 kHz mono
+
+The project expects ASR input to be mono at 16 kHz. A utility is included to
+convert and downmix WAV files.
+
+Run the converter module directly from the project root:
+
+```bash
+python -m triage_stream.utils.convert_wav_to_16k data/sample/call_10.wav data/sample/call_10_16k.wav
+```
+
+Or use the Makefile target (defaults shown; override with `IN`/`OUT`):
+
+```bash
+make convert
+# or
+make convert IN=path/to/input.wav OUT=path/to/output.wav
+```
+
+If you don't have the required packages installed, add them and install:
+
+```bash
+pip install soundfile scipy numpy
+```
+
                 +-------------------+
  sample audio   |  ingest /         |  AudioChunk (base64 PCM, ordered, partial)
  (no real PII) ->|  stream_simulator|------------------+
