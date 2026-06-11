@@ -30,7 +30,7 @@ async def main() -> None:
     transcriber = Transcriber()
     async for chunk in simulate_call("data/sample/call_10_16k.wav", call_id="day_2_test_call"):
         transcript_chunk = transcriber.transcribe_chunk(chunk)
-        print(transcript_chunk)
+        print(transcript_chunk.text)
 
 
 if __name__ == "__main__":

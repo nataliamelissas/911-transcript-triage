@@ -17,7 +17,7 @@ from __future__ import annotations
 import base64
 from functools import cached_property
 from time import perf_counter
-import numpy as np  # Keep this; numpy is lightweight
+import numpy as np
 
 from triage_stream.common.schemas import AudioChunk, TranscriptChunk
 from triage_stream.common.config import settings
@@ -43,20 +43,27 @@ class Transcriber:
       # dividing by int_16_full normalizes the audio samples to the range [-1.0, 1.0], which is a common format for audio processing and is what the ASR model expects as input.
       pcm_np = np.frombuffer(pcm_bytes, dtype=np.int16).astype(np.float32) / int_16_full
       # Update the rolling buffer of bytes with the new chunk
-      self._buffer = np.concatenate([self._buffer, pcm_np])
-      # Transcribe only the current buffer chunk using the model and store in a TranscriptChunk
-      segments, _ = self.model.transcribe(pcm_np, beam_size=5)
 
+      # Keep a buffer with the latest buffer_seconds of audio
+      max_num_samples = int(settings.buffer_seconds * chunk.sample_rate)
+      self._buffer = np.concatenate([self._buffer, pcm_np])[-max_num_samples:]
+
+      # Transcribe the current buffer using the model and store in a TranscriptChunk
+      segments, _ = self.model.transcribe(self._buffer, beam_size=5)
+      segment_json_array = [
+          { "start": segment.start, "end": segment.end, "text": segment.text } 
+          for segment in segments
+      ]
       end_time = perf_counter()
 
+      self._segments.extend(segment_json_array)  # store segments for potential future use (e.g., context for classifier)
       latency_ms = (end_time - start_time) * 1000 # convert to milliseconds
-      self._segments.extend(segments)  # store segments for potential future use (e.g., context for classifier)
 
       return TranscriptChunk(
           call_id=chunk.call_id,
           seq=chunk.seq,
           ts=chunk.ts,
-          text=" ".join(segment.text for segment in segments),  # concatenate all segment texts for this chunk
+          text=" ".join(segment_json["text"] for segment_json in segment_json_array),  # concatenate all segment texts for this chunk
           is_partial=not chunk.is_final,
           asr_latency_ms=latency_ms
       )

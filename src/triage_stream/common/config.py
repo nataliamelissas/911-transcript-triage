@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     whisper_model: str = "base.en"      # tiny.en for CPU speed; base.en for accuracy
     whisper_device: str = "cpu"         # "cuda" if you have a GPU
     chunk_seconds: float = 1.0          # streaming chunk length -> latency knob
+    buffer_seconds: float = 60.0        # how much audio to keep in the rolling buffer for context
 
     # Classifier
     # Alias-based registry URI (registry *stages* are deprecated since MLflow 2.9;
