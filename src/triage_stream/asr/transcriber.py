@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import base64
 from functools import cached_property
-from time import time
+from time import perf_counter
 import numpy as np  # Keep this; numpy is lightweight
 
 from triage_stream.common.schemas import AudioChunk, TranscriptChunk
@@ -31,11 +31,11 @@ class Transcriber:
     @cached_property
     def model(self) -> WhisperModel: # type: ignore
         from faster_whisper import WhisperModel  # import here to avoid the heavy dependency if not used
-        return WhisperModel(settings.whisper_model, device=settings.whisper_device, compute_type="float16")
+        return WhisperModel(settings.whisper_model, device=settings.whisper_device)
 
     
     def transcribe_chunk(self, chunk: AudioChunk) -> TranscriptChunk:
-      start_time = time.perf_counter()
+      start_time = perf_counter()
 
       # decode base64 PCM to float32 numpy array
       pcm_bytes = base64.b64decode(chunk.pcm_b64)
@@ -47,7 +47,7 @@ class Transcriber:
       # Transcribe only the current buffer chunk using the model and store in a TranscriptChunk
       segments, _ = self.model.transcribe(pcm_np, beam_size=5)
 
-      end_time = time.perf_counter()
+      end_time = perf_counter()
 
       latency_ms = (end_time - start_time) * 1000 # convert to milliseconds
       self._segments.extend(segments)  # store segments for potential future use (e.g., context for classifier)

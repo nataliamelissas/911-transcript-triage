@@ -13,7 +13,7 @@ project mirroring the kind of system public-safety AI teams build.
 
 ## Architecture
 
-```
+````
 
 ## Converting audio to 16 kHz mono
 
@@ -24,7 +24,7 @@ Run the converter module directly from the project root:
 
 ```bash
 python -m triage_stream.utils.convert_wav_to_16k data/sample/call_10.wav data/sample/call_10_16k.wav
-```
+````
 
 Or use the Makefile target (defaults shown; override with `IN`/`OUT`):
 
@@ -41,32 +41,34 @@ pip install soundfile scipy numpy
 ```
 
                 +-------------------+
- sample audio   |  ingest /         |  AudioChunk (base64 PCM, ordered, partial)
- (no real PII) ->|  stream_simulator|------------------+
-                +-------------------+                  v
-                                          +-------------------------+
-                                          | asr / transcriber       |  faster-whisper
-                                          | rolling buffer, partials|  (streaming STT)
-                                          +-----------+-------------+
-                                                      | TranscriptChunk
-                                                      v
-                                          +-------------------------+
-                                          | classifier / predict    |  HF model from
-                                          | timeout + keyword       |  MLflow registry
-                                          | fallback (degrades)     |
-                                          +-----------+-------------+
-                                                      | Classification (urgency, score)
-                                                      v
-                                          +-------------------------+
-                                          | router / decide         |  deterministic,
-                                          | human-in-the-loop       |  testable policy
-                                          +-----------+-------------+
-                                                      | RouteDecision
-                                                      v
-                                   FastAPI  (REST + WS /stream, metrics, health)
-                                                      |
-                MLflow (tracking + model registry)    +--> AWS slice (ECS/Lambda + IaC)
-```
+
+sample audio | ingest / | AudioChunk (base64 PCM, ordered, partial)
+(no real PII) ->| stream_simulator|------------------+
++-------------------+ v
++-------------------------+
+| asr / transcriber | faster-whisper
+| rolling buffer, partials| (streaming STT)
++-----------+-------------+
+| TranscriptChunk
+v
++-------------------------+
+| classifier / predict | HF model from
+| timeout + keyword | MLflow registry
+| fallback (degrades) |
++-----------+-------------+
+| Classification (urgency, score)
+v
++-------------------------+
+| router / decide | deterministic,
+| human-in-the-loop | testable policy
++-----------+-------------+
+| RouteDecision
+v
+FastAPI (REST + WS /stream, metrics, health)
+|
+MLflow (tracking + model registry) +--> AWS slice (ECS/Lambda + IaC)
+
+````
 
 ## Design decisions (and the tradeoffs)
 
@@ -97,7 +99,7 @@ make install            # deps + editable install
 make test-unit          # fast unit tests (start here)
 docker compose up       # mlflow registry + api locally
 make run-api            # API at http://localhost:8000  (/docs for Swagger)
-```
+````
 
 No `make` on Windows? Each target is a one-liner — run it directly, e.g.
 `pip install -r requirements.txt; pip install -e .` for `make install`

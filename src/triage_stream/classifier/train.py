@@ -20,10 +20,18 @@ TODO(you):
 """
 from __future__ import annotations
 
+from triage_stream.ingest.stream_simulator import simulate_call
+from triage_stream.asr.transcriber import Transcriber
+import asyncio
 
-def main() -> None:
-    raise NotImplementedError("Day 3: fine-tune + MLflow tracking + registry gate")
+
+async def main() -> None:
+    # Test stream simulator and transciber together (day 2)
+    transcriber = Transcriber()
+    async for chunk in simulate_call("data/sample/call_10_16k.wav", call_id="day_2_test_call"):
+        transcript_chunk = transcriber.transcribe_chunk(chunk)
+        print(transcript_chunk)
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

@@ -18,7 +18,7 @@ from __future__ import annotations
 import asyncio
 import wave
 import base64
-import datetime
+from datetime import datetime
 from collections.abc import AsyncIterator
 from triage_stream.common.schemas import AudioChunk
 from triage_stream.common.config import settings
@@ -48,7 +48,7 @@ async def simulate_call(wav_path: str, call_id: str) -> AsyncIterator[AudioChunk
           chunk = AudioChunk(
               call_id=call_id,
               seq=curr_seq,
-              ts=datetime.now(datetime.timezone.utc),
+              ts=datetime.now().timestamp(),  # use current time for timestamp; in a real simulator, you might want to preserve the original timestamps or simulate realistic timing
               # sample_rate=16000, # optional since it's fixed in the config, but good to be explicit in the contract
               pcm_b64=pcm_64,
               is_final=is_final_frame  # set to True on the last chunk
