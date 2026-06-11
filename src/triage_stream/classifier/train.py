@@ -30,7 +30,7 @@ async def main() -> None:
     transcriber = Transcriber()
     async for chunk in simulate_call("data/sample/call_10_16k.wav", call_id="day_2_test_call"):
         transcript_chunk = transcriber.transcribe_chunk(chunk)
-        print(transcript_chunk.text)
+        print(f"ASR Latency: {transcript_chunk.asr_latency_ms}, Text: {transcript_chunk.text} \n")
 
 
 if __name__ == "__main__":
