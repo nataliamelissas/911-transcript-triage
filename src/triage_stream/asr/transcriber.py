@@ -31,7 +31,7 @@ class Transcriber:
     @cached_property
     def model(self) -> WhisperModel: # type: ignore
         from faster_whisper import WhisperModel  # import here to avoid the heavy dependency if not used
-        return WhisperModel(settings.whisper_model, device=settings.whisper_device)
+        return WhisperModel(settings.whisper_model, device=settings.whisper_device, compute_type=settings.compute_type)
 
     
     def transcribe_chunk(self, chunk: AudioChunk) -> TranscriptChunk:
@@ -57,7 +57,7 @@ class Transcriber:
       end_time = perf_counter()
 
       self._segments.extend(segment_json_array)  # store segments for potential future use (e.g., context for classifier)
-      latency_ms = (end_time - start_time) * 1000 # convert to milliseconds
+      latency_ms = round((end_time - start_time) * 1000, 2) # convert to milliseconds and round to 2 decimal places
 
       return TranscriptChunk(
           call_id=chunk.call_id,

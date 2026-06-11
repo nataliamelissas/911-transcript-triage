@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     # ASR
     whisper_model: str = "base.en"      # tiny.en for CPU speed; base.en for accuracy
     whisper_device: str = "cpu"         # "cuda" if you have a GPU
+    compute_type: str = "float32"       # "int8" for faster inference with some accuracy tradeoff; requires compatible hardware (e.g. 4th gen Intel or Nvidia T4+ GPUs)
     chunk_seconds: float = 1.0          # streaming chunk length -> latency knob
     buffer_seconds: float = 60.0        # how much audio to keep in the rolling buffer for context
 
